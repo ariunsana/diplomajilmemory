@@ -1,113 +1,209 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
+import 'pages/menu_page.dart';
+import 'pages/card_game_page.dart';
+import 'pages/sequence_memory_page.dart';
 
 void main() {
-  runApp(MemoryMatchGame());
+  runApp(const MemoryGamesApp());
 }
 
-class MemoryMatchGame extends StatelessWidget {
+class MemoryGamesApp extends StatelessWidget {
+  const MemoryGamesApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: MemoryMatchHomePage(),
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        fontFamily: 'Roboto',
+      ),
+      home: const HomePage(),
     );
   }
 }
 
-class MemoryMatchHomePage extends StatefulWidget {
-  @override
-  _MemoryMatchHomePageState createState() => _MemoryMatchHomePageState();
-}
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
 
-class _MemoryMatchHomePageState extends State<MemoryMatchHomePage> {
-  List<String> cards = ['🍎', '🍎', '🍌', '🍌', '🍉', '🍉', '🍇', '🍇', '🍒', '🍒', '🥝', '🥝'];
-  List<bool> revealed = List.filled(12, false);
-  int? firstSelectedIndex;
-  int moves = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    cards.shuffle(Random());
-  }
-
-  void onCardTap(int index) {
-    if (revealed[index]) return;
-
-    setState(() {
-      revealed[index] = true;
-      if (firstSelectedIndex == null) {
-        firstSelectedIndex = index;
-      } else {
-        moves++;
-        if (cards[firstSelectedIndex!] != cards[index]) {
-          Future.delayed(Duration(seconds: 1), () {
-            setState(() {
-              revealed[firstSelectedIndex!] = false;
-              revealed[index] = false;
-              firstSelectedIndex = null;
-            });
-          });
-        } else {
-          firstSelectedIndex = null;
-        }
-      }
-    });
-  }
-
-  bool isGameFinished() {
-    return revealed.every((card) => card);
+  void _navigateToGame(BuildContext context, String game) {
+    switch (game) {
+      case 'Хөзрийн тоглоом':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CardGamePage()),
+        );
+        break;
+      case 'Дараалал санах ой':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SequenceMemoryPage()),
+        );
+        break;
+      default:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$game тоглоомыг тун удахгүй нээх болно!')),
+        );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final padding = screenSize.width * 0.05; // 5% of screen width for padding
+
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text('Memory Match Game'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          'memorygames',
+          style: TextStyle(
+            fontFamily: 'Cursive',
+            fontSize: screenSize.width * 0.07, // Responsive font size
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
+            icon: const Icon(Icons.menu, color: Colors.white),
             onPressed: () {
-              setState(() {
-                cards.shuffle(Random());
-                revealed = List.filled(12, false);
-                firstSelectedIndex = null;
-                moves = 0;
-              });
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MenuPage()),
+              );
             },
-          )
+          ),
         ],
       ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Expanded(
-            child: GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
-              itemCount: 12,
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: () => onCardTap(index),
-                  child: Card(
-                    color: revealed[index] ? Colors.amber : Colors.blueGrey,
-                    child: Center(
-                      child: Text(
-                        revealed[index] ? cards[index] : '',
-                        style: TextStyle(fontSize: 32),
-                      ),
-                    ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.black, Color(0xFF1a1a1a)],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Padding(
+              padding: EdgeInsets.all(padding),
+              child: Column(
+                children: [
+                  SizedBox(height: screenSize.height * 0.02),
+                  _buildGameCard(
+                    context,
+                    Icons.style,
+                    'Хөзрийн тоглоом',
+                    'Ой санамжаа шалгаарай',
+                    Colors.blue,
+                    () => _navigateToGame(context, 'Хөзрийн тоглоом'),
                   ),
-                );
-              },
+                  SizedBox(height: screenSize.height * 0.03),
+                  _buildGameCard(
+                    context,
+                    Icons.grid_3x3,
+                    'Дараалал санах ой',
+                    'Товчлуур дарах нь улам урт болж байгааг санаарай',
+                    Colors.green,
+                    () => _navigateToGame(context, 'Дараалал санах ой'),
+                  ),
+                  SizedBox(height: screenSize.height * 0.03),
+                  _buildGameCard(
+                    context,
+                    Icons.grid_on,
+                    'Харааны санах ой',
+                    'Өсөн нэмэгдэх буй дөрвөлжин самбарыг санаарай',
+                    Colors.orange,
+                    () => _navigateToGame(context, 'Харааны санах ой'),
+                  ),
+                  SizedBox(height: screenSize.height * 0.02),
+                ],
+              ),
             ),
           ),
-          SizedBox(height: 20),
-          Text('Moves: $moves', style: TextStyle(fontSize: 24)),
-          SizedBox(height: 20),
-          if (isGameFinished())
-            Text('You won!', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold))
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGameCard(
+    BuildContext context,
+    IconData icon,
+    String title,
+    String subtitle,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    final screenSize = MediaQuery.of(context).size;
+    final iconSize = screenSize.width * 0.12; // Responsive icon size
+    
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          constraints: BoxConstraints(
+            maxWidth: 600, // Maximum width on larger devices
+            minHeight: screenSize.height * 0.15, // Minimum height relative to screen
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                Colors.white.withOpacity(0.9),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(screenSize.width * 0.05),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: iconSize,
+                  color: color,
+                ),
+                SizedBox(height: screenSize.height * 0.01),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: screenSize.width * 0.05,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                SizedBox(height: screenSize.height * 0.01),
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: screenSize.width * 0.035,
+                    color: Colors.black87.withOpacity(0.7),
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

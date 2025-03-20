@@ -2,7 +2,8 @@ from django.db import models
 
 class Player(models.Model):
     username = models.CharField(max_length=50, unique=True)
-    email = models.EmailField(max_length=100, unique=True)
+    email = models.CharField(max_length=50, unique=True)
+    passwd = models.CharField(max_length=50, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
 class GameType(models.Model):
@@ -18,37 +19,15 @@ class Game(models.Model):
     time_taken = models.IntegerField()
 
 class MemoryMatch(models.Model):
-    game = models.ForeignKey(Game, on_delete=models.CASCADE)
+    game = models.ForeignKey(Game, on_delete=models.CASCADE) 
     pairs_found = models.IntegerField()
     moves = models.IntegerField()
-    time_taken = models.IntegerField()
-
-class ChimpTest(models.Model):
-    game = models.ForeignKey(Game, on_delete=models.CASCADE)
-    highest_level = models.IntegerField()
     time_taken = models.IntegerField()
 
 class SequenceMemory(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
     highest_level = models.IntegerField()
     time_taken = models.IntegerField()
-
-class VisualMemory(models.Model):
-    game = models.ForeignKey(Game, on_delete=models.CASCADE)
-    highest_level = models.IntegerField()
-    time_taken = models.IntegerField()
-
-class ReactionTime(models.Model):
-    game = models.ForeignKey(Game, on_delete=models.CASCADE)
-    reaction_time = models.IntegerField()
-
-class VerbalMemory(models.Model):
-    game = models.ForeignKey(Game, on_delete=models.CASCADE)
-    words_recalled = models.IntegerField()
-
-class NumberMemory(models.Model):
-    game = models.ForeignKey(Game, on_delete=models.CASCADE)
-    highest_number_length = models.IntegerField()
 
 class CartGame(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
