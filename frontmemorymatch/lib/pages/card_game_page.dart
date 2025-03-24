@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/api_service.dart';
 
 class CardGamePage extends StatefulWidget {
   const CardGamePage({super.key});
@@ -61,8 +63,14 @@ class _CardGamePageState extends State<CardGamePage> {
     _isGameOver = true;
     if (!mounted) return;
 
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(milliseconds: 500), () async {
       if (!mounted) return;
+      
+      // Get the current player's ID
+      final prefs = await SharedPreferences.getInstance();
+      final playerId = prefs.getInt('playerId');
+      final playerName = prefs.getString('playerName');
+      
       if (won && _currentLevel < 5) {
         showDialog(
           context: context,
@@ -95,13 +103,63 @@ class _CardGamePageState extends State<CardGamePage> {
           barrierDismissible: false,
           builder: (context) => AlertDialog(
             title: Text(won ? 'Баяр хүргэе!' : 'Цаг дууслаа!'),
-            content: Text(won ? 'Та бүх түвшинг дууслаа!\nНийт оноо: $_score' : 'Цаг дууслаа!\nНийт оноо: $_score'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(won ? 'Та бүх түвшинг дууслаа!' : 'Цаг дууслаа!'),
+                Text('Нийт оноо: $_score'),
+                if (playerName == null)
+                  const Text('\nТоглогчийн нэр бүртгэгдээгүй байна.',
+                    style: TextStyle(color: Colors.orange)),
+              ],
+            ),
             actions: [
+              if (playerId != null) ...[
+                TextButton(
+                  onPressed: () async {
+                    try {
+                      final apiService = ApiService();
+                      await apiService.createGame(
+                        playerId, 
+                        _score,
+                        gameType: 'CARD_GAME',
+                        gameName: 'Card Game Level $_currentLevel',
+                      );
+                      
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Оноо амжилттай хадгалагдлаа!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                        Navigator.pop(context);
+                        _initializeGame();
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Оноо хадгалахад алдаа гарлаа: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('Оноо хадгалах'),
+                ),
+                const SizedBox(width: 8),
+              ],
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
                   _initializeGame();
                 },
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.blue,
+                ),
                 child: const Text('Дахин тоглох'),
               ),
             ],

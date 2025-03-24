@@ -1,8 +1,89 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'username.dart';
 
-class MenuPage extends StatelessWidget {
+class MenuPage extends StatefulWidget {
   const MenuPage({super.key});
+
+  @override
+  State<MenuPage> createState() => _MenuPageState();
+}
+
+class _MenuPageState extends State<MenuPage> {
+  String? currentPlayerName;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPlayerData();
+  }
+
+  Future<void> _loadPlayerData() async {
+    setState(() => isLoading = true);
+    try {
+      // Load current player name from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final savedName = prefs.getString('playerName');
+      
+      setState(() {
+        currentPlayerName = savedName;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading player data: $e');
+      setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _promptForName() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
+
+    if (result == true) {
+      _loadPlayerData(); // Reload data after new name is added
+    }
+  }
+
+  Widget _buildPlayerSection() {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[800],
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Тоглогч: ${currentPlayerName ?? "Нэргүй"}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (currentPlayerName == null)
+            TextButton(
+              onPressed: _promptForName,
+              child: const Text(
+                'Нэр оруулах',
+                style: TextStyle(
+                  color: Colors.blue,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,23 +104,28 @@ class MenuPage extends StatelessWidget {
           ),
         ),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildMenuButton('Онооны самбар', () {}),
-            const SizedBox(height: 20),
-            _buildMenuButton('Нэвтрэх', () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginPage()),
-              );
-            }),
-            const SizedBox(height: 20),
-            _buildMenuButton('Гарах', () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            }),
-          ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.black, Color(0xFF1a1a1a)],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildPlayerSection(),
+                const SizedBox(height: 30),
+                _buildMenuButton('Онооны самбар', () {}),
+                const SizedBox(height: 20),
+                _buildMenuButton('Шинэ нэр оруулах', _promptForName),
+              ],
+            ),
+          ),
         ),
       ),
     );
