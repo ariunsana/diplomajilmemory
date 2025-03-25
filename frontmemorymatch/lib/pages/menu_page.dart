@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'username.dart';
+import 'package:frontmemorymatch/pages/scoreboardPage.dart';
+
 
 class MenuPage extends StatefulWidget {
   const MenuPage({super.key});
@@ -120,7 +122,21 @@ class _MenuPageState extends State<MenuPage> {
               children: [
                 _buildPlayerSection(),
                 const SizedBox(height: 30),
-                _buildMenuButton('Онооны самбар', () {}),
+                _buildMenuButton('Онооны самбар', () {
+  if (currentPlayerName != null) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ScoreboardPage(playerName: currentPlayerName!),
+      ),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Эхлээд тоглогчийн нэр оруулна уу!")),
+    );
+  }
+}),
+
                 const SizedBox(height: 20),
                 _buildMenuButton('Шинэ нэр оруулах', _promptForName),
               ],
