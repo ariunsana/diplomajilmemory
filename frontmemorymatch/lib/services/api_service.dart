@@ -14,7 +14,7 @@ class ApiService {
       );
       
       if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
+        List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
         // Limit to most recent 10 players
         return data.map((json) => Player.fromJson(json))
             .toList()
@@ -30,13 +30,18 @@ class ApiService {
   }
 
   Future<List<Game>> getGames() async {
-    final response = await http.get(Uri.parse('$baseUrl/games/'));
-    
-    if (response.statusCode == 200) {
-      List<dynamic> data = json.decode(response.body);
-      return data.map((json) => Game.fromJson(json)).toList();
-    } else {
-      throw Exception('Failed to load games');
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/games/'));
+      
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+        return data.map((json) => Game.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load games');
+      }
+    } catch (e) {
+      print('Error fetching games: $e');
+      return [];
     }
   }
 
@@ -45,19 +50,20 @@ class ApiService {
     String? gameName,
   }) async {
     try {
-      print('Saving game score: Player ID: $playerId, Score: $score, Game Type: $gameType');
+      final Map<String, dynamic> body = {
+        'player': playerId,
+        'score': score,
+        'game_type': gameType,
+        'game_name': gameName ?? 'Memory Match',
+      };
+
       final response = await http.post(
         Uri.parse('$baseUrl/games/'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: json.encode({
-          'player': playerId,
-          'score': score,
-          'game_type': gameType,
-          'game_name': gameName ?? 'Memory Match',
-        }),
+        body: json.encode(body),
       );
       
       print('Response status: ${response.statusCode}');
@@ -98,15 +104,17 @@ class ApiService {
 
     // If name doesn't exist, create new player
     try {
+      final Map<String, dynamic> body = {
+        'name': name,
+      };
+
       final response = await http.post(
         Uri.parse('$baseUrl/players/'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: json.encode({
-          'name': name,
-        }),
+        body: json.encode(body),
       );
       
       if (response.statusCode == 201) {

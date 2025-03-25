@@ -24,7 +24,6 @@ class _MenuPageState extends State<MenuPage> {
   Future<void> _loadPlayerData() async {
     setState(() => isLoading = true);
     try {
-      // Load current player name from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final savedName = prefs.getString('playerName');
       
@@ -41,12 +40,22 @@ class _MenuPageState extends State<MenuPage> {
   Future<void> _promptForName() async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const LoginPage()),
+      MaterialPageRoute(builder: (context) => LoginPage(
+        initialName: currentPlayerName, // Pass current name as initial value
+      )),
     );
 
     if (result == true) {
       _loadPlayerData(); // Reload data after new name is added
     }
+  }
+
+  Future<void> _clearPlayerName() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('playerName');
+    setState(() {
+      currentPlayerName = null;
+    });
   }
 
   Widget _buildPlayerSection() {
@@ -60,16 +69,25 @@ class _MenuPageState extends State<MenuPage> {
         color: Colors.grey[800],
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
-          Text(
-            'Тоглогч: ${currentPlayerName ?? "Нэргүй"}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Тоглогч: ${currentPlayerName ?? "Нэргүй Байна"}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (currentPlayerName != null)
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.blue),
+                  onPressed: _promptForName,
+                ),
+            ],
           ),
           if (currentPlayerName == null)
             TextButton(
@@ -78,6 +96,17 @@ class _MenuPageState extends State<MenuPage> {
                 'Нэр оруулах',
                 style: TextStyle(
                   color: Colors.blue,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          if (currentPlayerName != null)
+            TextButton(
+              onPressed: _clearPlayerName,
+              child: const Text(
+                'Нэр арилгах',
+                style: TextStyle(
+                  color: Colors.red,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -123,19 +152,13 @@ class _MenuPageState extends State<MenuPage> {
                 _buildPlayerSection(),
                 const SizedBox(height: 30),
                 _buildMenuButton('Онооны самбар', () {
-  if (currentPlayerName != null) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ScoreboardPage(playerName: currentPlayerName!),
-      ),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Эхлээд тоглогчийн нэр оруулна уу!")),
-    );
-  }
-}),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ScoreboardPage(),
+                    ),
+                  );
+                }),
 
                 const SizedBox(height: 20),
                 _buildMenuButton('Шинэ нэр оруулах', _promptForName),

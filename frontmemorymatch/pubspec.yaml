@@ -70,6 +70,12 @@ flutter:
     - assets/images/jcard.jpg
     - assets/images/10card.png
     - assets/images/9card.jpg
+    - assets/images/duck.png
+    - assets/images/ufo.png
+    - assets/images/orange.png
+    - assets/images/sonic.png
+    - assets/images/brain.png
+    - assets/images/giraffe.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

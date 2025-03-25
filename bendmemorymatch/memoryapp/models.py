@@ -9,8 +9,8 @@ class Player(models.Model):
 
 class Game(models.Model):
     GAME_TYPES = [
-        ('CARD_GAME', 'Card Memory Game'),
-        ('SEQUENCE_GAME', 'Sequence Memory Game'),
+        ('CARD_GAME', 'Хөзрийн тоглоом'),
+        ('SEQUENCE_GAME', 'Дараалалын санах ой'),
     ]
     
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='games')
