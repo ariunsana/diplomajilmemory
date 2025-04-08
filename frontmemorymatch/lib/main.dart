@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'pages/menu_page.dart';
 import 'pages/card_game_page.dart';
 import 'pages/sequence_memory_page.dart';
+import 'pages/chimp_test_page.dart';
 
 void main() {
   runApp(const MemoryGamesApp());
@@ -34,10 +35,16 @@ class HomePage extends StatelessWidget {
           MaterialPageRoute(builder: (context) => const CardGamePage()),
         );
         break;
-      case 'Дараалал санах ой':
+      case 'Харааны санах ой':
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const SequenceMemoryPage()),
+        );
+        break;
+      case 'Дараалалын санах ой':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ChimpTestPage()),
         );
         break;
       default:
@@ -105,20 +112,20 @@ class HomePage extends StatelessWidget {
                   SizedBox(height: screenSize.height * 0.03),
                   _buildGameCard(
                     context,
-                    Icons.grid_3x3,
-                    'Дараалал санах ой',
-                    'Асуултын зөв хариултыг олоорой',
+                    Icons.visibility_rounded,
+                    'Харааны санах ой',
+                    'Зургуудыг цээжлээд дарааллыг нь санаарай',
                     Colors.green,
-                    () => _navigateToGame(context, 'Дараалал санах ой'),
+                    () => _navigateToGame(context, 'Харааны санах ой'),
                   ),
                   SizedBox(height: screenSize.height * 0.03),
                   _buildGameCard(
                     context,
-                    Icons.grid_on,
-                    'Харааны санах ой',
-                    'Өсөн нэмэгдэх буй дөрвөлжин самбарыг санаарай',
+                    Icons.psychology_rounded,
+                    'Дараалалын санах ой',
+                    'Тоонуудын дарааллаар нь санаарай',
                     Colors.orange,
-                    () => _navigateToGame(context, 'Харааны санах ой'),
+                    () => _navigateToGame(context, 'Дараалалын санах ой'),
                   ),
                   SizedBox(height: screenSize.height * 0.02),
                 ],
