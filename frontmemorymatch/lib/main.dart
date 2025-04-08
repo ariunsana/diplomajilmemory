@@ -105,7 +105,7 @@ class HomePage extends StatelessWidget {
                     context,
                     Icons.style,
                     'Хөзрийн тоглоом',
-                    'Хөзөр нь дээр дарж хос хосоор нь нийлүүлээрэй',
+                    'Хөзөр дээр дарж хос хосоор нь нийлүүлээрэй',
                     Colors.blue,
                     () => _navigateToGame(context, 'Хөзрийн тоглоом'),
                   ),
