@@ -2,8 +2,6 @@ from django.db import models
 
 class Player(models.Model):
     name = models.CharField(max_length=100)
-    level = models.IntegerField(default=1)
-    score = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

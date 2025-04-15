@@ -17,29 +17,6 @@ class PlayerViewSet(viewsets.ModelViewSet):
         exists = Player.objects.filter(name=name).exists()
         return Response({'exists': exists})
 
-    @action(detail=True, methods=['patch'])
-    def update_level(self, request, pk=None):
-        try:
-            player = self.get_object()
-            new_level = request.data.get('level')
-            new_score = request.data.get('score')
-            
-            if new_level is not None:
-                player.level = new_level
-            if new_score is not None:
-                player.score = new_score
-                
-            player.save()
-            return Response({
-                'message': 'Level and score updated successfully',
-                'level': player.level,
-                'score': player.score
-            })
-        except Player.DoesNotExist:
-            return Response({'error': 'Player not found'}, status=404)
-        except Exception as e:
-            return Response({'error': str(e)}, status=500)
-
     def create(self, request, *args, **kwargs):
         # Check for duplicate name before creating
         name = request.data.get('name')
