@@ -15,17 +15,21 @@ class ApiService {
       
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
-        // Limit to most recent 10 players
-        return data.map((json) => Player.fromJson(json))
-            .toList()
-            .take(10)
-            .toList();
+        if (data.isEmpty) {
+          print('No players found in the database');
+          return [];
+        }
+        return data.map((json) => Player.fromJson(json)).toList();
+      } else if (response.statusCode == 404) {
+        print('Players endpoint not found');
+        return [];
       } else {
-        throw Exception('Failed to load players');
+        print('Failed to load players: ${response.statusCode}');
+        return [];
       }
     } catch (e) {
       print('Error fetching players: $e');
-      return [];  // Return empty list on error
+      return [];
     }
   }
 
@@ -124,6 +128,34 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Network error: $e');
+    }
+  }
+
+  Future<void> updatePlayerLevel(int playerId, int level, int score) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/players/$playerId/update_level/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'level': level,
+          'score': score,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        return;
+      } else if (response.statusCode == 404) {
+        throw Exception('Тоглогч олдсонгүй');
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['error'] ?? 'Түвшин шинэчлэхэд алдаа гарлаа');
+      }
+    } catch (e) {
+      print('Error updating player level: $e');
+      throw Exception('Сүлжээний алдаа: $e');
     }
   }
 } 
