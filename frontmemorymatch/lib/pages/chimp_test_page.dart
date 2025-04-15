@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:math';
+import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
+import 'package:confetti/confetti.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'dart:convert';
 
 class ChimpTestPage extends StatefulWidget {
   const ChimpTestPage({super.key});
@@ -11,7 +16,7 @@ class ChimpTestPage extends StatefulWidget {
   State<ChimpTestPage> createState() => _ChimpTestPageState();
 }
 
-class _ChimpTestPageState extends State<ChimpTestPage> {
+class _ChimpTestPageState extends State<ChimpTestPage> with SingleTickerProviderStateMixin {
   List<int> _numbers = [];
   List<Offset> _positions = [];
   int _currentLevel = 1;
@@ -20,14 +25,69 @@ class _ChimpTestPageState extends State<ChimpTestPage> {
   int _maxNumber = 0;
   bool _isGameOver = false;
   bool _hasClickedFirst = false;
-  final Random _random = Random();
+  final math.Random _random = math.Random();
+  late ConfettiController _confettiController;
+  late AnimationController _gameOverController;
+  late Animation<Offset> _gameOverAnimation;
+  final AudioPlayer _gameOverSound = AudioPlayer();
+  bool _hasAudio = false;
 
   @override
   void initState() {
     super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+    _gameOverController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _gameOverAnimation = Tween<Offset>(
+      begin: const Offset(0, -1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _gameOverController,
+      curve: Curves.easeOut,
+    ));
+    _checkAudioAvailability();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startNewRound();
     });
+  }
+
+  Future<void> _checkAudioAvailability() async {
+    try {
+      final manifestContent = await rootBundle.loadString('AssetManifest.json');
+      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+      _hasAudio = manifestMap.containsKey('assets/sounds/game_over.mp3');
+    } catch (e) {
+      debugPrint('Error checking audio availability: $e');
+      _hasAudio = false;
+    }
+  }
+
+  Future<void> _playGameOverSound() async {
+    if (!_hasAudio) return;
+
+    try {
+      if (kIsWeb) {
+        final bytes = await rootBundle.load('assets/sounds/game_over.mp3');
+        final buffer = bytes.buffer;
+        final audioBytes = buffer.asUint8List();
+        await _gameOverSound.play(BytesSource(audioBytes));
+      } else {
+        await _gameOverSound.play(AssetSource('sounds/game_over.mp3'));
+      }
+    } catch (e) {
+      debugPrint('Failed to play game over sound: $e');
+      _hasAudio = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    _gameOverController.dispose();
+    _gameOverSound.dispose();
+    super.dispose();
   }
 
   void _startNewRound() {
@@ -90,28 +150,162 @@ class _ChimpTestPageState extends State<ChimpTestPage> {
     _isGameOver = true;
     if (!mounted) return;
 
+    if (won) {
+      _confettiController.play();
+    } else {
+      _gameOverController.forward();
+      _playGameOverSound();
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final playerId = prefs.getInt('playerId');
     final playerName = prefs.getString('playerName');
 
-    if (won) {
+    if (won && _currentLevel < 5) {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          backgroundColor: Colors.grey[850],
-          title: const Text('Баяр хүргэе!', style: TextStyle(color: Colors.white)),
-          content: Text(
-            'Level $_currentLevel дууслаа!\nНийт оноо: $_score\nДараагийн түвшинд ${_maxNumber + 1} тоо байх болно',
-            style: const TextStyle(color: Colors.white),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _startNextLevel();
-              },
-              child: const Text('Дараагийн түвшин'),
+        builder: (context) => Stack(
+          children: [
+            AlertDialog(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              contentPadding: EdgeInsets.zero,
+              content: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.yellow.withOpacity(0.2),
+                      Colors.orange.withOpacity(0.2),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.yellow.withOpacity(0.5),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.yellow.withOpacity(0.3),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Баяр хүргэе!',
+                      style: TextStyle(
+                        color: Colors.yellow,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                        shadows: [
+                          Shadow(
+                            color: Colors.yellow.withOpacity(0.5),
+                            blurRadius: 10,
+                            offset: const Offset(0, 0),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.1),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Level $_currentLevel дууслаа!',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Нийт оноо: $_score',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Level ${_currentLevel + 1}-т орж байна',
+                            style: const TextStyle(
+                              color: Colors.yellow,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Center(
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _startNextLevel();
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: Colors.yellow.withOpacity(0.2),
+                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: Colors.yellow.withOpacity(0.5),
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        child: const Text(
+                          'Дараагийн түвшин',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirection: math.pi / 2,
+                maxBlastForce: 5,
+                minBlastForce: 2,
+                emissionFrequency: 0.05,
+                numberOfParticles: 50,
+                gravity: 0.1,
+                shouldLoop: false,
+                colors: const [
+                  Colors.yellow,
+                  Colors.orange,
+                ],
+              ),
             ),
           ],
         ),
@@ -120,80 +314,237 @@ class _ChimpTestPageState extends State<ChimpTestPage> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          backgroundColor: Colors.grey[850],
-          title: const Text('Тоглоом дууслаа!', style: TextStyle(color: Colors.white)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Буруу дарлаа!',
-                style: TextStyle(color: Colors.white),
-              ),
-              Text(
-                'Нийт оноо: $_score',
-                style: const TextStyle(color: Colors.white),
-              ),
-              if (playerName == null)
-                const Text(
-                  '\nТоглогчийн нэр бүртгэгдээгүй байна.',
-                  style: TextStyle(color: Colors.orange),
+        builder: (context) => Stack(
+          children: [
+            SlideTransition(
+              position: _gameOverAnimation,
+              child: AlertDialog(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                contentPadding: EdgeInsets.zero,
+                content: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.black.withOpacity(0.95),
+                        Colors.red.withOpacity(0.2),
+                        Colors.black.withOpacity(0.95),
+                      ],
+                      stops: const [0.0, 0.5, 1.0],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.red.withOpacity(0.5),
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.3),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 10,
+                        spreadRadius: -5,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        won ? 'Баяр хүргэе!' : 'GAME OVER!',
+                        style: TextStyle(
+                          color: won ? Colors.yellow : Colors.red,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                          shadows: [
+                            Shadow(
+                              color: won ? Colors.yellow.withOpacity(0.5) : Colors.red.withOpacity(0.5),
+                              blurRadius: 10,
+                              offset: const Offset(0, 0),
+                            ),
+                            Shadow(
+                              color: Colors.black.withOpacity(0.5),
+                              blurRadius: 5,
+                              offset: const Offset(0, 0),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.black.withOpacity(0.4),
+                              Colors.red.withOpacity(0.1),
+                              Colors.black.withOpacity(0.4),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.1),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              won ? 'Та бүх түвшинг дууслаа!' : 'Буруу дарлаа!',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Нийт оноо: $_score',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (playerName == null)
+                              const Padding(
+                                padding: EdgeInsets.only(top: 8),
+                                child: Text(
+                                  'Тоглогчийн нэр бүртгэгдээгүй байна.',
+                                  style: TextStyle(
+                                    color: Colors.orange,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () async {
+                              try {
+                                final apiService = ApiService();
+                                await apiService.createGame(
+                                  playerId ?? 0,
+                                  _score,
+                                  gameType: 'CHIMP_TEST',
+                                  gameName: 'Chimp Test Level $_currentLevel',
+                                );
+                                
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Оноо амжилттай хадгалагдлаа!'),
+                                      backgroundColor: Colors.yellow,
+                                    ),
+                                  );
+                                  Navigator.pop(context);
+                                  setState(() {
+                                    _currentLevel = 1;
+                                    _score = 0;
+                                  });
+                                  _startNewRound();
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Оноо хадгалахад алдаа гарлаа: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.blue.withOpacity(0.8),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: const BorderSide(
+                                  color: Colors.white,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: const Text(
+                              'Оноо хадгалах',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          TextButton(
+                            onPressed: () {
+                              _gameOverController.reverse().then((_) {
+                                Navigator.pop(context);
+                                setState(() {
+                                  _currentLevel = 1;
+                                  _score = 0;
+                                });
+                                _startNewRound();
+                              });
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.red.withOpacity(0.2),
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(
+                                  color: Colors.red.withOpacity(0.5),
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: const Text(
+                              'Дахин тоглох',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-            ],
-          ),
-          actions: [
-            if (playerId != null) ...[
-              TextButton(
-                onPressed: () async {
-                  try {
-                    final apiService = ApiService();
-                    await apiService.createGame(
-                      playerId,
-                      _score,
-                      gameType: 'CHIMP_TEST',
-                      gameName: 'Chimp Test Level $_currentLevel',
-                    );
-                    
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Оноо амжилттай хадгалагдлаа!'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                      Navigator.pop(context);
-                      setState(() {
-                        _currentLevel = 1;
-                        _score = 0;
-                      });
-                      _startNewRound();
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Оноо хадгалахад алдаа гарлаа: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                },
-                child: const Text('Оноо хадгалах', style: TextStyle(color: Colors.white)),
               ),
-            ],
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                setState(() {
-                  _currentLevel = 1;
-                  _score = 0;
-                });
-                _startNewRound();
-              },
-              child: const Text('Дахин тоглох', style: TextStyle(color: Colors.blue)),
             ),
+            if (won)
+              Align(
+                alignment: Alignment.topCenter,
+                child: ConfettiWidget(
+                  confettiController: _confettiController,
+                  blastDirection: math.pi / 2,
+                  maxBlastForce: 5,
+                  minBlastForce: 2,
+                  emissionFrequency: 0.05,
+                  numberOfParticles: 50,
+                  gravity: 0.1,
+                  shouldLoop: false,
+                  colors: const [
+                    Colors.yellow,
+                    Colors.orange,
+                  ],
+                ),
+              ),
           ],
         ),
       );
@@ -220,7 +571,7 @@ class _ChimpTestPageState extends State<ChimpTestPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF2196F3), // Bright blue background
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -234,6 +585,7 @@ class _ChimpTestPageState extends State<ChimpTestPage> {
             color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
           ),
         ),
         actions: [
@@ -245,11 +597,7 @@ class _ChimpTestPageState extends State<ChimpTestPage> {
       ),
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.black, Color(0xFF1a1a1a)],
-          ),
+          color: Color(0xFF2196F3), // Solid bright blue background
         ),
         child: Stack(
           children: [
@@ -272,10 +620,10 @@ class _ChimpTestPageState extends State<ChimpTestPage> {
                           _numbers[i].toString(),
                           style: TextStyle(
                             color: _currentLevel == 1 
-                                ? Colors.black
+                                ? Colors.black87
                                 : (!_hasClickedFirst
-                                    ? Colors.black
-                                    : Colors.transparent),
+                                    ? Colors.black87
+                                    : Colors.transparent),  // Completely hide the number
                             fontSize: 36,
                             fontWeight: FontWeight.bold,
                           ),

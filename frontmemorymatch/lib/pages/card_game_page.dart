@@ -314,9 +314,11 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Colors.black.withOpacity(0.9),
+                          Colors.black.withOpacity(0.95),
+                          Colors.red.withOpacity(0.2),
                           Colors.black.withOpacity(0.95),
                         ],
+                        stops: const [0.0, 0.5, 1.0],
                       ),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
@@ -329,6 +331,11 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
                           blurRadius: 20,
                           spreadRadius: 5,
                         ),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.5),
+                          blurRadius: 10,
+                          spreadRadius: -5,
+                        ),
                       ],
                     ),
                     child: Column(
@@ -336,16 +343,21 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          won ? 'Баяр хүргэе!' : 'GAME OVER!',
+                          'GAME OVER!',
                           style: TextStyle(
-                            color: won ? Colors.yellow : Colors.red,
+                            color: Colors.red,
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.5,
                             shadows: [
                               Shadow(
-                                color: won ? Colors.yellow.withOpacity(0.5) : Colors.red.withOpacity(0.5),
+                                color: Colors.red.withOpacity(0.5),
                                 blurRadius: 10,
+                                offset: const Offset(0, 0),
+                              ),
+                              Shadow(
+                                color: Colors.black.withOpacity(0.5),
+                                blurRadius: 5,
                                 offset: const Offset(0, 0),
                               ),
                             ],
@@ -355,7 +367,15 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.3),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.black.withOpacity(0.4),
+                                Colors.red.withOpacity(0.1),
+                                Colors.black.withOpacity(0.4),
+                              ],
+                            ),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: Colors.white.withOpacity(0.1),
@@ -366,7 +386,7 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                won ? 'Та бүх түвшинг дууслаа!' : 'Цаг дууслаа!',
+                                'Цаг дууслаа!',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 20,
@@ -717,7 +737,7 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF1a1a2e),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -727,7 +747,19 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
         ),
         title: Text(
           'Хөзрийн тоглоом - Level $_currentLevel',
-          style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+            shadows: [
+              Shadow(
+                color: Colors.black26,
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
         ),
         actions: [
           IconButton(
@@ -741,7 +773,11 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.black, Color(0xFF1a1a1a)],
+            colors: [
+              Color(0xFF1a1a2e),
+              Color(0xFF16213e),
+              Color(0xFF0f172a),
+            ],
           ),
         ),
         child: SafeArea(
@@ -752,25 +788,57 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Оноо: $_score',
-                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        'Оноо: $_score',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
                     ),
                     AnimatedOpacity(
                       duration: const Duration(milliseconds: 500),
                       opacity: _isTimeUp ? 0.5 : 1.0,
-                      child: Text(
-                        'Хугацаа: ${_formatTime(_timeLeft)}',
-                        style: TextStyle(
-                          color: _timeLeft <= 10 ? Colors.red : Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: _timeLeft <= 10 
+                              ? Colors.red.withOpacity(0.2)
+                              : Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _timeLeft <= 10
+                                ? Colors.red.withOpacity(0.5)
+                                : Colors.white.withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          'Хугацаа: ${_formatTime(_timeLeft)}',
+                          style: TextStyle(
+                            color: _timeLeft <= 10 ? Colors.red : Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.1,
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 Expanded(
                   child: Padding(
                     padding: EdgeInsets.symmetric(
@@ -800,9 +868,16 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                        color: Colors.white24,
+                                        color: Colors.white.withOpacity(0.3),
                                         width: 1,
                                       ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.3),
+                                          blurRadius: 5,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
                                     ),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
@@ -817,9 +892,16 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                        color: Colors.white24,
+                                        color: Colors.white.withOpacity(0.3),
                                         width: 1,
                                       ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.3),
+                                          blurRadius: 5,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
                                     ),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
