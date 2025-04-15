@@ -41,12 +41,12 @@ class _MenuPageState extends State<MenuPage> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => LoginPage(
-        initialName: currentPlayerName, // Pass current name as initial value
+        initialName: currentPlayerName,
       )),
     );
 
     if (result == true) {
-      _loadPlayerData(); // Reload data after new name is added
+      _loadPlayerData();
     }
   }
 
@@ -60,14 +60,36 @@ class _MenuPageState extends State<MenuPage> {
 
   Widget _buildPlayerSection() {
     if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF2196F3),
+        ),
+      );
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(10),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF1D1E33).withOpacity(0.8),
+            const Color(0xFF2D2E42).withOpacity(0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF2196F3).withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2196F3).withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -78,13 +100,14 @@ class _MenuPageState extends State<MenuPage> {
                 'Тоглогч: ${currentPlayerName ?? "Нэргүй Байна"}',
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
                 ),
               ),
               if (currentPlayerName != null)
                 IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.blue),
+                  icon: const Icon(Icons.edit, color: Color(0xFF2196F3)),
                   onPressed: _promptForName,
                 ),
             ],
@@ -95,8 +118,9 @@ class _MenuPageState extends State<MenuPage> {
               child: const Text(
                 'Нэр оруулах',
                 style: TextStyle(
-                  color: Colors.blue,
+                  color: Color(0xFF2196F3),
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
             ),
@@ -106,8 +130,9 @@ class _MenuPageState extends State<MenuPage> {
               child: const Text(
                 'Нэр арилгах',
                 style: TextStyle(
-                  color: Colors.red,
+                  color: Color(0xFFFF5252),
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
             ),
@@ -119,9 +144,9 @@ class _MenuPageState extends State<MenuPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF0A0E21),
       appBar: AppBar(
-        backgroundColor: Colors.grey[800],
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -132,6 +157,8 @@ class _MenuPageState extends State<MenuPage> {
           style: TextStyle(
             color: Colors.white,
             fontSize: 20,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
           ),
         ),
       ),
@@ -140,7 +167,11 @@ class _MenuPageState extends State<MenuPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.black, Color(0xFF1a1a1a)],
+            colors: [
+              Color(0xFF0A0E21),
+              Color(0xFF1D1E33),
+              Color(0xFF2D2E42),
+            ],
           ),
         ),
         child: SafeArea(
@@ -151,17 +182,26 @@ class _MenuPageState extends State<MenuPage> {
               children: [
                 _buildPlayerSection(),
                 const SizedBox(height: 30),
-                _buildMenuButton('Онооны самбар', () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ScoreboardPage(),
-                    ),
-                  );
-                }),
-
+                _buildMenuButton(
+                  'Онооны самбар',
+                  Icons.leaderboard,
+                  const Color(0xFF4CAF50),
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ScoreboardPage(),
+                      ),
+                    );
+                  },
+                ),
                 const SizedBox(height: 20),
-                _buildMenuButton('Шинэ нэр оруулах', _promptForName),
+                _buildMenuButton(
+                  'Шинэ нэр оруулах',
+                  Icons.person_add,
+                  const Color(0xFF2196F3),
+                  _promptForName,
+                ),
               ],
             ),
           ),
@@ -170,20 +210,37 @@ class _MenuPageState extends State<MenuPage> {
     );
   }
 
-  Widget _buildMenuButton(String text, VoidCallback onPressed) {
+  Widget _buildMenuButton(String text, IconData icon, Color color, VoidCallback onPressed) {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.grey[300],
-        foregroundColor: Colors.black,
-        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+        backgroundColor: color.withOpacity(0.2),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(15),
+          side: BorderSide(
+            color: color.withOpacity(0.3),
+            width: 1,
+          ),
         ),
+        elevation: 0,
       ),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 18),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 10),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }

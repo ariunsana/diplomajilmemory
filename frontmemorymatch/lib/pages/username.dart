@@ -40,7 +40,7 @@ class _LoginPageState extends State<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Амжилттай нэвтэрлээ'),
-            backgroundColor: Colors.green,
+            backgroundColor: Color(0xFF4CAF50),
           ),
         );
         Navigator.pop(context, true);
@@ -50,7 +50,7 @@ class _LoginPageState extends State<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Алдаа гарлаа: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: const Color(0xFFFF5252),
           ),
         );
       }
@@ -72,7 +72,7 @@ class _LoginPageState extends State<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Шинэ тоглогч амжилттай бүртгэгдлээ'),
-            backgroundColor: Colors.green,
+            backgroundColor: Color(0xFF4CAF50),
           ),
         );
         Navigator.pop(context, true);
@@ -82,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Алдаа гарлаа: ${e.toString().replaceAll('Exception:', '')}'),
-            backgroundColor: Colors.red,
+            backgroundColor: const Color(0xFFFF5252),
           ),
         );
       }
@@ -104,28 +104,56 @@ class _LoginPageState extends State<LoginPage> {
               context: context,
               builder: (BuildContext context) {
                 return AlertDialog(
-                  backgroundColor: Colors.grey[850],
+                  backgroundColor: const Color(0xFF1D1E33),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(
+                      color: const Color(0xFF2196F3).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
                   title: const Text(
                     'Бүртгэлтэй нэр',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                   content: Text(
                     '"$name" нэр бүртгэлтэй байна. Энэ нэрээр нэвтрэх үү?',
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                   actions: [
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      child: const Text('Үгүй', style: TextStyle(color: Colors.grey)),
+                      child: const Text(
+                        'Үгүй',
+                        style: TextStyle(
+                          color: Color(0xFF2196F3),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
                         _handleExistingName(name);
                       },
-                      child: const Text('Тийм', style: TextStyle(color: Colors.blue)),
+                      child: const Text(
+                        'Тийм',
+                        style: TextStyle(
+                          color: Color(0xFF4CAF50),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ],
                 );
@@ -144,9 +172,9 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF0A0E21),
       appBar: AppBar(
-        backgroundColor: Colors.grey[800],
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -157,6 +185,8 @@ class _LoginPageState extends State<LoginPage> {
           style: TextStyle(
             color: Colors.white,
             fontSize: 20,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
           ),
         ),
       ),
@@ -165,7 +195,11 @@ class _LoginPageState extends State<LoginPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.black, Color(0xFF1a1a1a)],
+            colors: [
+              Color(0xFF0A0E21),
+              Color(0xFF1D1E33),
+              Color(0xFF2D2E42),
+            ],
           ),
         ),
         child: SafeArea(
@@ -179,27 +213,49 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   TextFormField(
                     controller: _nameController,
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      letterSpacing: 0.5,
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Таны нэр',
-                      labelStyle: TextStyle(color: Colors.grey[400]),
-                      prefixIcon: const Icon(Icons.person, color: Colors.white),
+                      labelStyle: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 16,
+                        letterSpacing: 0.5,
+                      ),
+                      prefixIcon: const Icon(Icons.person, color: Color(0xFF2196F3)),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.white),
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide(
+                          color: const Color(0xFF2196F3).withOpacity(0.3),
+                          width: 1,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: Colors.blue[400]!),
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF2196F3),
+                          width: 2,
+                        ),
                       ),
                       errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.red),
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFFF5252),
+                          width: 1,
+                        ),
                       ),
                       focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.red),
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFFF5252),
+                          width: 2,
+                        ),
                       ),
+                      filled: true,
+                      fillColor: const Color(0xFF1D1E33).withOpacity(0.5),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -213,11 +269,12 @@ class _LoginPageState extends State<LoginPage> {
                   ElevatedButton(
                     onPressed: _isLoading ? null : _checkAndHandleName,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[700],
+                      backgroundColor: const Color(0xFF2196F3),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(15),
                       ),
+                      elevation: 0,
                     ),
                     child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
@@ -226,6 +283,7 @@ class _LoginPageState extends State<LoginPage> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
                           ),
                         ),
                   ),
