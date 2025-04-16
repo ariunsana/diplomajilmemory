@@ -580,7 +580,7 @@ class _ChimpTestPageState extends State<ChimpTestPage> with SingleTickerProvider
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Дараалалын санах ой - Level $_currentLevel',
+          'Дарааллын санах ой - Level $_currentLevel',
           style: const TextStyle(
             color: Colors.white,
             fontSize: 24,

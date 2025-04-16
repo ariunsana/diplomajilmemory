@@ -703,7 +703,7 @@ class _SequenceMemoryPageState extends State<SequenceMemoryPage> with SingleTick
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Дараалал санах - Level $_currentLevel',
+          'Байрлалын ангууч - Level $_currentLevel',
           style: const TextStyle(
             color: Colors.white,
             fontSize: 24,

@@ -46,13 +46,13 @@ class HomePage extends StatelessWidget {
           MaterialPageRoute(builder: (context) => const CardGamePage()),
         );
         break;
-      case 'Харааны санах ой':
+      case 'Байрлалын ангууч':
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const SequenceMemoryPage()),
         );
         break;
-      case 'Дараалалын санах ой':
+      case 'Дарааллын санах ой':
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const ChimpTestPage()),
@@ -75,14 +75,32 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text(
-          'memorygames',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: screenSize.width * 0.07,
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
+        title: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [
+              Color(0xFF2196F3),
+              Color(0xFF4CAF50),
+              Color(0xFFFF9800),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ).createShader(bounds),
+          child: Text(
+            'memorygames',
+            style: TextStyle(
+              fontFamily: 'Pacifico',
+              fontSize: screenSize.width * 0.08,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withOpacity(0.3),
+                  offset: const Offset(0, 2),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -129,19 +147,19 @@ class HomePage extends StatelessWidget {
                   _buildGameCard(
                     context,
                     Icons.visibility_rounded,
-                    'Харааны санах ой',
+                    'Байрлалын ангууч',
                     'Зургуудыг цээжлээд дарааллыг нь санаарай',
                     const Color(0xFF2196F3),
-                    () => _navigateToGame(context, 'Харааны санах ой'),
+                    () => _navigateToGame(context, 'Байрлалын ангууч'),
                   ),
                   SizedBox(height: screenSize.height * 0.03),
                   _buildGameCard(
                     context,
                     Icons.psychology_rounded,
-                    'Дараалалын санах ой',
-                    'Тоонуудын дарааллаар нь санаарай',
+                    'Дарааллын санах ой',
+                    'Тоонуудыг дарааллаар нь санаарай',
                     const Color(0xFFFF9800),
-                    () => _navigateToGame(context, 'Дараалалын санах ой'),
+                    () => _navigateToGame(context, 'Дарааллын санах ой'),
                   ),
                   SizedBox(height: screenSize.height * 0.02),
                 ],
