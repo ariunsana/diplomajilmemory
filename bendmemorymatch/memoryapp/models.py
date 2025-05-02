@@ -25,3 +25,19 @@ class Game(models.Model):
 
     def __str__(self):
         return f"{self.player.name}'s {self.get_game_type_display()} - Score: {self.score}"
+
+class GameProgress(models.Model):
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='game_progress')
+    game_type = models.CharField(max_length=20, choices=Game.GAME_TYPES)
+    current_level = models.IntegerField(default=1)
+    score = models.IntegerField(default=0)
+    card_images = models.JSONField(default=list)
+    flipped_cards = models.JSONField(default=list)
+    matched_cards = models.JSONField(default=list)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['player', 'game_type']
+
+    def __str__(self):
+        return f"{self.player.name}'s {self.game_type} progress - Level {self.current_level}"

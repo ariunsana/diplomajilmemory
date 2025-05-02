@@ -126,4 +126,64 @@ class ApiService {
       throw Exception('Network error: $e');
     }
   }
+
+  Future<Map<String, dynamic>?> getGameProgress(int playerId, String gameType) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/game-progress/get_progress/')
+            .replace(queryParameters: {
+          'player_id': playerId.toString(),
+          'game_type': gameType,
+        }),
+        headers: {'Accept': 'application/json'},
+      );
+      
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else if (response.statusCode == 404) {
+        return null;
+      } else {
+        throw Exception('Failed to load game progress');
+      }
+    } catch (e) {
+      print('Error fetching game progress: $e');
+      return null;
+    }
+  }
+
+  Future<void> saveGameProgress(int playerId, String gameType, {
+    required int currentLevel,
+    required int score,
+    required List<String> cardImages,
+    required List<bool> flippedCards,
+    required List<bool> matchedCards,
+  }) async {
+    try {
+      final Map<String, dynamic> body = {
+        'player_id': playerId,
+        'game_type': gameType,
+        'current_level': currentLevel,
+        'score': score,
+        'card_images': cardImages,
+        'flipped_cards': flippedCards,
+        'matched_cards': matchedCards,
+      };
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/game-progress/save_progress/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode(body),
+      );
+      
+      if (response.statusCode != 200) {
+        throw Exception('Failed to save game progress: ${response.body}');
+      }
+    } catch (e) {
+      print('Error saving game progress: $e');
+      throw Exception('Network error: $e');
+    }
+  }
 } 

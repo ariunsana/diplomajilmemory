@@ -33,6 +33,8 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
   late Animation<Offset> _gameOverAnimation;
   final AudioPlayer _gameOverSound = AudioPlayer();
   bool _hasAudio = false;
+  Timer? _autoSaveTimer;
+  int? _currentPlayerId;
 
   final List<String> _possibleImages = [
     'images/tamga.png',
@@ -60,7 +62,7 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
       curve: Curves.easeOut,
     ));
     _checkAudioAvailability();
-    _initializeGame();
+    _loadPlayerAndProgress();
   }
 
   Future<void> _checkAudioAvailability() async {
@@ -93,12 +95,87 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
     }
   }
 
+  Future<void> _loadPlayerAndProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final playerId = prefs.getInt('playerId');
+    final playerName = prefs.getString('playerName');
+
+    if (playerId != null) {
+      setState(() {
+        _currentPlayerId = playerId;
+      });
+      await _loadGameProgress();
+    } else {
+      _initializeGame();
+    }
+  }
+
+  Future<void> _loadGameProgress() async {
+    if (_currentPlayerId == null) return;
+
+    try {
+      final apiService = ApiService();
+      final progress = await apiService.getGameProgress(_currentPlayerId!, 'CARD_GAME');
+      
+      if (progress != null && mounted) {
+        setState(() {
+          _currentLevel = progress['current_level'] ?? 1;
+          _score = progress['score'] ?? 0;
+          _cardImages = List<String>.from(progress['card_images'] ?? []);
+          _flippedCards = List<bool>.from(progress['flipped_cards'] ?? []);
+          _matchedCards = List<bool>.from(progress['matched_cards'] ?? []);
+          
+          if (_cardImages.isEmpty) {
+            _initializeGame();
+          } else {
+            _timeLeft = 60;
+            _startTimer();
+            _startAutoSave();
+          }
+        });
+      } else {
+        _initializeGame();
+      }
+    } catch (e) {
+      print('Error loading game progress: $e');
+      _initializeGame();
+    }
+  }
+
+  void _startAutoSave() {
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _saveGameProgress();
+    });
+  }
+
+  Future<void> _saveGameProgress() async {
+    if (_currentPlayerId == null) return;
+
+    try {
+      final apiService = ApiService();
+      await apiService.saveGameProgress(
+        _currentPlayerId!,
+        'CARD_GAME',
+        currentLevel: _currentLevel,
+        score: _score,
+        cardImages: _cardImages,
+        flippedCards: _flippedCards,
+        matchedCards: _matchedCards,
+      );
+    } catch (e) {
+      print('Error saving game progress: $e');
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
+    _autoSaveTimer?.cancel();
     _confettiController.dispose();
     _gameOverController.dispose();
     _gameOverSound.dispose();
+    _saveGameProgress();
     super.dispose();
   }
 
@@ -236,40 +313,94 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
                         ),
                       ),
                       const SizedBox(height: 24),
-                      Center(
-                        child: TextButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            if (_currentLevel == 1) {
-                              _startLevel2();
-                            } else if (_currentLevel == 2) {
-                              _startLevel3();
-                            } else if (_currentLevel == 3) {
-                              _startLevel4();
-                            } else if (_currentLevel == 4) {
-                              _startLevel5();
-                            }
-                          },
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            backgroundColor: Colors.yellow.withOpacity(0.2),
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color: Colors.yellow.withOpacity(0.5),
-                                width: 1,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          TextButton(
+                            onPressed: () async {
+                              try {
+                                final apiService = ApiService();
+                                await apiService.createGame(
+                                  playerId ?? 0, 
+                                  _score,
+                                  gameType: 'CARD_GAME',
+                                  gameName: 'Card Game Level $_currentLevel',
+                                );
+                                
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Оноо амжилттай хадгалагдлаа!'),
+                                      backgroundColor: Colors.yellow,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Оноо хадгалахад алдаа гарлаа: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.blue.withOpacity(0.8),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: const BorderSide(
+                                  color: Colors.white,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: const Text(
+                              'Оноо хадгалах',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
-                          child: const Text(
-                            'Дараагийн түвшин',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              if (_currentLevel == 1) {
+                                _startLevel2();
+                              } else if (_currentLevel == 2) {
+                                _startLevel3();
+                              } else if (_currentLevel == 3) {
+                                _startLevel4();
+                              } else if (_currentLevel == 4) {
+                                _startLevel5();
+                              }
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.yellow.withOpacity(0.2),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(
+                                  color: Colors.yellow.withOpacity(0.5),
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: const Text(
+                              'Дараагийн түвшин',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
@@ -418,83 +549,97 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
                         ),
                         const SizedBox(height: 24),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            TextButton(
-                              onPressed: () async {
-                                try {
-                                  final apiService = ApiService();
-                                  await apiService.createGame(
-                                    playerId ?? 0, 
-                                    _score,
-                                    gameType: 'CARD_GAME',
-                                    gameName: 'Card Game Level $_currentLevel',
-                                  );
-                                  
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Оноо амжилттай хадгалагдлаа!'),
-                                        backgroundColor: Colors.yellow,
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: TextButton(
+                                  onPressed: () async {
+                                    try {
+                                      final apiService = ApiService();
+                                      await apiService.createGame(
+                                        playerId ?? 0, 
+                                        _score,
+                                        gameType: 'CARD_GAME',
+                                        gameName: 'Card Game Level $_currentLevel',
+                                      );
+                                      
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Оноо амжилттай хадгалагдлаа!'),
+                                            backgroundColor: Colors.yellow,
+                                          ),
+                                        );
+                                        Navigator.pop(context);
+                                        _initializeGame();
+                                      }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Оноо хадгалахад алдаа гарлаа: $e'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    backgroundColor: Colors.blue.withOpacity(0.8),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      side: const BorderSide(
+                                        color: Colors.white,
+                                        width: 1,
                                       ),
-                                    );
-                                    Navigator.pop(context);
-                                    _initializeGame();
-                                  }
-                                } catch (e) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Оноо хадгалахад алдаа гарлаа: $e'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                backgroundColor: Colors.blue.withOpacity(0.8),
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  side: const BorderSide(
-                                    color: Colors.white,
-                                    width: 1,
+                                    ),
                                   ),
-                                ),
-                              ),
-                              child: const Text(
-                                'Оноо хадгалах',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                                  child: const Text(
+                                    'Оноо хадгалах',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            TextButton(
-                              onPressed: () {
-                                _gameOverController.reverse().then((_) {
-                                  Navigator.pop(context);
-                                  _initializeGame();
-                                });
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                backgroundColor: Colors.red.withOpacity(0.2),
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  side: BorderSide(
-                                    color: Colors.red.withOpacity(0.5),
-                                    width: 1,
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 8.0),
+                                child: TextButton(
+                                  onPressed: () {
+                                    _gameOverController.reverse().then((_) {
+                                      Navigator.pop(context);
+                                      _initializeGame();
+                                    });
+                                  },
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    backgroundColor: Colors.red.withOpacity(0.2),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      side: BorderSide(
+                                        color: Colors.red.withOpacity(0.5),
+                                        width: 1,
+                                      ),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Дахин тоглох',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
                                 ),
-                              ),
-                              child: const Text(
-                                'Дахин тоглох',
-                                style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
@@ -539,16 +684,12 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
       _timeLeft = 60;
       _isGameOver = false;
 
-      _cardImages = [
-        'images/tamga.png',
-        'images/tamga.png',
-        'images/geltamga.jpg',
-        'images/geltamga.jpg',
-        'images/kcard.jpg',
-        'images/kcard.jpg',
-        'images/Qcard.jpg',
-        'images/Qcard.jpg',
-      ];
+      _cardImages = List.generate(8, (index) {
+        if (index < 2) return 'images/tamga.png';
+        if (index < 4) return 'images/geltamga.jpg';
+        if (index < 6) return 'images/kcard.jpg';
+        return 'images/Qcard.jpg';
+      });
 
       _cardImages.shuffle();
     });
@@ -565,18 +706,13 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
       _timeLeft = 90;
       _isGameOver = false;
 
-      _cardImages = [
-        'images/tamga.png',
-        'images/tamga.png',
-        'images/geltamga.jpg',
-        'images/geltamga.jpg',
-        'images/kcard.jpg',
-        'images/kcard.jpg',
-        'images/Qcard.jpg',
-        'images/Qcard.jpg',
-        'images/jcard.jpg',
-        'images/jcard.jpg',
-      ];
+      _cardImages = List.generate(10, (index) {
+        if (index < 2) return 'images/tamga.png';
+        if (index < 4) return 'images/geltamga.jpg';
+        if (index < 6) return 'images/kcard.jpg';
+        if (index < 8) return 'images/Qcard.jpg';
+        return 'images/jcard.jpg';
+      });
 
       _cardImages.shuffle();
     });
@@ -593,20 +729,14 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
       _timeLeft = 120;
       _isGameOver = false;
 
-      _cardImages = [
-        'images/tamga.png',
-        'images/tamga.png',
-        'images/geltamga.jpg',
-        'images/geltamga.jpg',
-        'images/kcard.jpg',
-        'images/kcard.jpg',
-        'images/Qcard.jpg',
-        'images/Qcard.jpg',
-        'images/jcard.jpg',
-        'images/jcard.jpg',
-        'images/10card.png',
-        'images/10card.png',
-      ];
+      _cardImages = List.generate(12, (index) {
+        if (index < 2) return 'images/tamga.png';
+        if (index < 4) return 'images/geltamga.jpg';
+        if (index < 6) return 'images/kcard.jpg';
+        if (index < 8) return 'images/Qcard.jpg';
+        if (index < 10) return 'images/jcard.jpg';
+        return 'images/10card.png';
+      });
 
       _cardImages.shuffle();
     });
@@ -623,22 +753,15 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
       _timeLeft = 150;
       _isGameOver = false;
 
-      _cardImages = [
-        'images/tamga.png',
-        'images/tamga.png',
-        'images/geltamga.jpg',
-        'images/geltamga.jpg',
-        'images/kcard.jpg',
-        'images/kcard.jpg',
-        'images/Qcard.jpg',
-        'images/Qcard.jpg',
-        'images/jcard.jpg',
-        'images/jcard.jpg',
-        'images/10card.png',
-        'images/10card.png',
-        'images/9card.jpg',
-        'images/9card.jpg',
-      ];
+      _cardImages = List.generate(14, (index) {
+        if (index < 2) return 'images/tamga.png';
+        if (index < 4) return 'images/geltamga.jpg';
+        if (index < 6) return 'images/kcard.jpg';
+        if (index < 8) return 'images/Qcard.jpg';
+        if (index < 10) return 'images/jcard.jpg';
+        if (index < 12) return 'images/10card.png';
+        return 'images/9card.jpg';
+      });
 
       _cardImages.shuffle();
     });
@@ -658,14 +781,11 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
       _isGameOver = false;
       _isTimeUp = false;
 
-      _cardImages = [
-        'images/tamga.png',
-        'images/tamga.png',
-        'images/geltamga.jpg',
-        'images/geltamga.jpg',
-        'images/kcard.jpg',
-        'images/kcard.jpg',
-      ];
+      _cardImages = List.generate(6, (index) {
+        if (index < 2) return 'images/tamga.png';
+        if (index < 4) return 'images/geltamga.jpg';
+        return 'images/kcard.jpg';
+      });
 
       _cardImages.shuffle();
     });
@@ -720,6 +840,7 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
           if (_matchedCards.every((matched) => matched)) {
             _gameOver(true);
           }
+          _saveGameProgress();
         } else {
           Future.delayed(const Duration(milliseconds: 800), () {
             setState(() {
@@ -854,7 +975,7 @@ class _CardGamePageState extends State<CardGamePage> with SingleTickerProviderSt
                       ),
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _currentLevel == 1 ? 6 : (_currentLevel == 2 ? 8 : (_currentLevel == 3 ? 10 : (_currentLevel == 4 ? 12 : 14))),
+                      itemCount: _cardImages.length,
                       itemBuilder: (context, index) {
                         return GestureDetector(
                           onTap: () => _handleCardTap(index),
